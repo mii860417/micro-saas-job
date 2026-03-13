@@ -17,6 +17,7 @@ jobs:
             "https://logcat-error-filter.streamlit.app"
             "https://stack-trace-root-cause-finder.streamlit.app"
             "https://api-error-parser.streamlit.app"
+            "https://log-diff-analyzer.streamlit.app"
           )
 
           for url in "${urls[@]}"; do
