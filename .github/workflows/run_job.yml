@@ -6,22 +6,69 @@ on:
   workflow_dispatch:
 
 jobs:
-  ping:
+  keep-alive:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Ping Streamlit Apps
-        run: |
-          urls=(
-            "https://crash-log-analyzer.streamlit.app"
-            "https://logcat-error-filter.streamlit.app"
-            "https://stack-trace-root-cause-finder.streamlit.app"
-            "https://api-error-parser.streamlit.app"
-            "https://log-diff-analyzer.streamlit.app"
-          )
+      - name: Checkout
+        uses: actions/checkout@v4
 
-          for url in "${urls[@]}"; do
-            echo "Pinging $url"
-            curl -L -A "Mozilla/5.0" --max-time 30 "$url" > /dev/null
-            echo "Done"
-          done
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Wake Streamlit apps
+        run: |
+          cat > wake-streamlit.js <<'EOF'
+          const { chromium } = require('playwright');
+
+          const urls = [
+            'https://crash-log-analyzer.streamlit.app',
+            'https://logcat-error-filter.streamlit.app',
+            'https://stack-trace-root-cause-finder.streamlit.app',
+            'https://api-error-parser.streamlit.app',
+            'https://log-diff-analyzer.streamlit.app'
+          ];
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext();
+            const page = await context.newPage();
+
+            for (const url of urls) {
+              try {
+                console.log(`Opening ${url}`);
+                await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+                // 給 Streamlit 一點時間 render 睡眠頁/主頁
+                await page.waitForTimeout(5000);
+
+                // 嘗試點擊喚醒按鈕
+                const wakeButton = page.getByRole('button', { name: /yes, get this app back up!/i });
+                if (await wakeButton.count()) {
+                  console.log(`Wake button found for ${url}, clicking...`);
+                  await wakeButton.click();
+                  await page.waitForTimeout(8000);
+                } else {
+                  console.log(`No wake button found for ${url}, app may already be awake.`);
+                }
+
+                console.log(`Done: ${url}`);
+              } catch (err) {
+                console.error(`Failed: ${url}`);
+                console.error(err.message);
+              }
+            }
+
+            await browser.close();
+          })();
+          EOF
+
+          node wake-streamlit.js
