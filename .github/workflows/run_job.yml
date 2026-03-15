@@ -21,6 +21,7 @@ jobs:
           )
 
           for url in "${urls[@]}"; do
-            status=$(curl -I -o /dev/null -s --max-time 20 -w "%{http_code}" "$url")
-            echo "$url → HTTP $status"
+            echo "Pinging $url"
+            curl -L -A "Mozilla/5.0" --max-time 30 "$url" > /dev/null
+            echo "Done"
           done
