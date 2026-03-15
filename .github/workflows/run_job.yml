@@ -22,6 +22,6 @@ jobs:
 
           for url in "${urls[@]}"; do
             echo "Pinging $url"
-            status=$(curl -L -A "Mozilla/5.0" -o /dev/null -s --max-time 30 -w "%{http_code}" "$url")
+            curl -L -A "Mozilla/5.0" --max-time 30 "$url" > /dev/null
             echo "Done"
           done
