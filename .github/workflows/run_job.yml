@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  keep-alive:
+  micro-saas-job:
     runs-on: ubuntu-latest
 
     steps:
